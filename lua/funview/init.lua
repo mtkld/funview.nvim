@@ -6,6 +6,7 @@ local context = "ctx_funview"
 
 -- Map file extensions to language-specific functions
 local language_handlers = {
+
 	lua = require("funview.parsers.lua"),
 	php = require("funview.parsers.php"),
 	javascript = require("funview.parsers.javascript"),
@@ -18,18 +19,36 @@ local last_buffer_we_bound_to = nil
 
 -- Function to detect language by file extension and call appropriate function
 local function get_functions()
+	log("funview.get_functions() called")
 	-- Detect the filetype of the current buffer
 	local filetype = vim.bo.filetype
 	--log("filetype: " .. filetype)
+	log("Current buffer filetype: " .. filetype)
 	--log("file: " .. vim.api.nvim_buf_get_name(0))
 	-- Get the appropriate function handler based on the filetype
-	local handler = language_handlers[filetype]
-	--	local handler = require("funview.parsers." .. filetype)
-	if handler then
-		return handler() -- Call the language-specific function
+	if filetype == "javascript" then
+		-- For JavaScript, we use a different handler
+		--filetype = "javascript" -- Ensure we use the correct handler for JavaScript
+
+		log("-- Step Inject start")
+		--------------------------- INJECT START ----------------------------
+		log("Running inject javascript parser")
+		return require("mdtoc").exposed_parser("javascript")
+	--------------------------- INJECT END ------------------------------
 	else
-		-- Return an empty table for unsupported filetypes
-		return {}
+		log("Running old approach for filetype: " .. filetype)
+		--------------------------------
+		-------------------------------
+		----- OLD APPROACH ----------------
+		local handler = language_handlers[filetype]
+		--	local handler = require("funview.parsers." .. filetype)
+		if handler then
+			return handler() -- Call the language-specific function
+		else
+			-- Return an empty table for unsupported filetypes
+			return {}
+		end
+		--------------------------------
 	end
 end
 
@@ -100,7 +119,7 @@ end
 -- Public function to return the list of keys and function names
 function M.get_list()
 	local functions = get_functions()
-
+	log("INSIDE M.get_list()")
 	-- Filter out duplicates based on function name and line number
 	local unique_functions = filter_duplicates(functions)
 
@@ -258,7 +277,6 @@ end
 -- Function to bind all unique function keys using dynkey
 function M.re_bind_function_keys()
 	local dynkey = require("dynkey")
-
 	-- Get the list of functions (you'll need to implement or get this function)
 	local functions = get_functions()
 	---- Caching ----
